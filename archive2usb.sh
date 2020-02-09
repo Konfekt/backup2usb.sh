@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# debug output and exit on error or use of undeclared variable or pipe error:
+set -o xtrace -o errtrace -o errexit -o nounset -o pipefail
+
 if [ "$EUID" -ne 0 ]
   then echo "Please run as root"
   exit
@@ -7,31 +10,40 @@ fi
 
 # CONFIG {{{
 USER=KONFEKT
-# ROOT_DRIVE=/dev/sda
 
 BKP_LABEL=USB_LABEL
-[ -z "$HOSTNAME" ] && HOSTNAME="$(uname -n)"
-BKP_SUBFOLDER=$HOSTNAME
-# CONFIG }}}
+BKP_MOUNT=/run/media/"$USER"/"$BKP_LABEL"
+BKP_FOLDER="$BKP_MOUNT"/"${HOSTNAME:-"$(uname -n)"}"
+# }}}
 
+ROOT_FOLDER=
 HOME_FOLDER=/home/"$USER"
-# ROOT_FOLDER=/
 
-MOUNT=/run/media/"$USER"
-BKP_MOUNT="$MOUNT"/"$BKP_LABEL"
-BKP_FOLDER="$BKP_MOUNT"/"$BKP_SUBFOLDER"
-
-# mount
-if ! [ -e "$BKP_MOUNT" ] ; then
+# mount {{{
+if ! [ -d "$BKP_MOUNT" ] ; then
   mkdir --parents "$BKP_MOUNT"
-  chown "$USER":users "$BKP_MOUNT"
-  mount --verbose --types ntfs LABEL="$BKP_LABEL" --target "$BKP_MOUNT"
 fi
-sleep 1
+chown "$USER":users "$BKP_MOUNT"
+
+unmount () {
+  if [ -d "$BKP_MOUNT" ]; then
+    sleep 3
+    umount --verbose "$BKP_MOUNT"*
+    rmdir --verbose "$BKP_MOUNT"*
+  fi
+}
+trap unmount EXIT
+
+mount --verbose  --types ntfs --options windows_names LABEL="$BKP_LABEL" --target "$BKP_MOUNT"
 if ! mountpoint --quiet "$BKP_MOUNT" ; then
-  rmdir --verbose "$BKP_MOUNT"
+  echo "Could not mount! Quitting."
   exit 1
 fi
+if ! [ -d "$BKP_FOLDER" ] ; then
+  echo "Backup folder inexistent on mount point! Quitting."
+  exit 1
+fi
+# }}}
 
 TODAY=$(date +%Y-%m-%d)
 mkdir --parents "$BKP_FOLDER"
@@ -97,14 +109,9 @@ fsarchiver --jobs=$jobs --verbose --overwrite --allow-rw-mounted \
   --exclude='/lib/modules/*/volatile/.mounted' \
   savedir "$BKP_FOLDER/fsarchiver/root_$TODAY.fsa" "$ROOT_FOLDER"
 
+# ROOT_DRIVE=/dev/sda
 # # Backup MBR + Partition Table!
 # mkdir --parents "$BKP_FOLDER/mbr"
 # dd if=$ROOT_DRIVE of="$BKP_FOLDER/mbr/mbr_$TODAY" count=1 bs=512 
 # mkdir --parents "$BKP_FOLDER/partition_table"
 # sfdisk -d $ROOT_DRIVE > "$BKP_FOLDER/partition_table/partition_table_$TODAY.sfdisk"
-
-# unmount
-if [ -e "$BKP_FOLDER" ]; then
-  umount --verbose "$BKP_MOUNT"*
-  rmdir --verbose "$BKP_MOUNT"*
-fi

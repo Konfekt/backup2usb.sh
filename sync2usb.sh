@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# debug output and exit on error or use of undeclared variable or pipe error:
+set -o xtrace -o errtrace -o errexit -o nounset -o pipefail
+
 if [ "$EUID" -ne 0 ]
   then echo "Please run as root"
   exit
@@ -9,28 +12,38 @@ fi
 USER=KONFEKT
 
 BKP_LABEL=USB_LABEL
-[ -z "$HOSTNAME" ] && HOSTNAME="$(uname -n)"
-BKP_SUBFOLDER=$HOSTNAME
-# CONFIG }}}
+BKP_MOUNT=/run/media/"$USER"/"$BKP_LABEL"
+BKP_FOLDER="$BKP_MOUNT"/"${HOSTNAME:-"$(uname -n)"}"
+# }}}
 
 ROOT_FOLDER=
 HOME_FOLDER=/home/"$USER"
 
-MOUNT=/run/media/"$USER"
-BKP_MOUNT="$MOUNT"/"$BKP_LABEL"
-BKP_FOLDER="$BKP_MOUNT"/"$BKP_SUBFOLDER"
-
-# mount
-if ! [ -e "$BKP_MOUNT" ] ; then
+# mount {{{
+if ! [ -d "$BKP_MOUNT" ] ; then
   mkdir --parents "$BKP_MOUNT"
-  chown "$USER":users "$BKP_MOUNT"
-  mount --verbose --types ntfs LABEL="$BKP_LABEL" --target "$BKP_MOUNT"
 fi
-sleep 1
+chown "$USER":users "$BKP_MOUNT"
+
+unmount () {
+  if [ -d "$BKP_MOUNT" ]; then
+    sleep 3
+    umount --verbose "$BKP_MOUNT"*
+    rmdir --verbose "$BKP_MOUNT"*
+  fi
+}
+trap unmount EXIT
+
+mount --verbose  --types ntfs --options windows_names LABEL="$BKP_LABEL" --target "$BKP_MOUNT"
 if ! mountpoint --quiet "$BKP_MOUNT" ; then
-  rmdir --verbose "$BKP_MOUNT"
+  echo "Could not mount! Quitting."
   exit 1
 fi
+if ! [ -d "$BKP_FOLDER" ] ; then
+  echo "Backup folder inexistent on mount point! Quitting."
+  exit 1
+fi
+# }}}
 
 # Backup files:
 # For excludes, see http://askubuntu.com/questions/28477/what-is-safe-to-exclude-for-a-full-system-backup/28488#28488
@@ -91,9 +104,3 @@ rsync -axEHA --delete --modify-window=1 --verbose --human-readable --info=progre
   --exclude='[Tt]mp/' \
   --exclude='*[<>":\|?*]*' \
   "$ROOT_FOLDER"/ "$BKP_FOLDER/rsync"/
-
-# unmount
-if [ -e "$BKP_FOLDER" ]; then
-  umount --verbose "$BKP_MOUNT"*
-  rmdir --verbose "$BKP_MOUNT"*
-fi
