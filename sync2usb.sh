@@ -55,7 +55,11 @@ mkdir --parents "$BKP_FOLDER/rsync/home/$USER"
   # --exclude='/Music/' \
   # --exclude='/Pictures/' \
   # --exclude='/Videos/' \
-rsync -axEHA --delete --modify-window=1 --verbose --human-readable --info=progress2 \
+rsync \
+  --archive --hard-links --acls --executability --modify-window=1 \
+  --one-file-system --compress \
+  --delete \
+  --human-readable --info=progress2 \
   --exclude='/Downloads/' \
   --exclude='/Bluetooth/' \
   --exclude='/.cache/' \
