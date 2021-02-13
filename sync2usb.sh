@@ -59,7 +59,7 @@ rsync \
   --archive --hard-links --acls --executability --modify-window=1 \
   --one-file-system --compress \
   --delete \
-  --human-readable --info=progress2 \
+  --human-readable --info=stats1,progress2 \
   --exclude='/Downloads/' \
   --exclude='/Bluetooth/' \
   --exclude='/.cache/' \
