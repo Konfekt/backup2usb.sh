@@ -3,7 +3,7 @@ These simple (`POSIX` compliant for `UNIX` based operating systems, such as `Lin
 - back up all files and folders inside the `$HOME` folder and root directory `/`
 - except those listed with `--exclude`
 
-via `rsync`, [fsarchiver](http://www.fsarchiver.org/QuickStart) or [system-tar-and-restore](https://linoxide.com/linux-how-to/system-tar-restore-bash-script-linux-backup/) to a `USB` drive with an `NTFS` file system.
+via `rsync`, [borg](https://borgbackup.readthedocs.io/en/stable/quickstart.html), [fsarchiver](http://www.fsarchiver.org/QuickStart) or [system-tar-and-restore](https://linoxide.com/linux-how-to/system-tar-restore-bash-script-linux-backup/) to a `USB` drive with an `NTFS` file system.
 
 # Installation
 
@@ -12,7 +12,7 @@ via `rsync`, [fsarchiver](http://www.fsarchiver.org/QuickStart) or [system-tar-a
     cd ~/Downloads/
     git clone https://github.com/konfekt/backup2usb.sh
     ````
-0. Copy `sync2usb.sh`, `archive2usb.sh` or `system2usb.sh` into a convenient folder, for example, `~/bin`
+0. Copy `borg2usb.sh` `sync2usb.sh`, `archive2usb.sh` or `system2usb.sh` into a convenient folder, for example, `~/bin`
     ```sh
     cp ~/Downloads/sync2usb.sh/sync2usb.sh ~/bin/
     ```
