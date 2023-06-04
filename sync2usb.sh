@@ -34,12 +34,14 @@ unmount () {
 }
 trap unmount EXIT
 
-mount --verbose  --types ntfs --options windows_names LABEL="$BKP_LABEL" --target "$BKP_MOUNT"
-if ! mountpoint --quiet "$BKP_MOUNT" ; then
-  echo "Could not mount! Quitting."
-  exit 1
+if ! mountpoint --quiet "$BKP_MOUNT"; then
+  mount --verbose --types ntfs --options windows_names LABEL="$BKP_LABEL" --target "$BKP_MOUNT"
+  if ! mountpoint --quiet "$BKP_MOUNT"; then
+    echo "Could not mount! Quitting."
+    exit 1
+  fi
 fi
-if ! [ -d "$BKP_FOLDER" ] ; then
+if ! [ -d "$BKP_FOLDER" ]; then
   echo "Backup folder inexistent on mount point! Quitting."
   exit 1
 fi
